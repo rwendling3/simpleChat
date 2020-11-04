@@ -50,16 +50,23 @@ public class ClientConsole implements ChatIF
    * @param host The host to connect to.
    * @param port The port to connect on.
    */
-  public ClientConsole(String host, int port) 
-  {
-    try 
-    {
-      client= new ChatClient(host, port, this);
-      
-      
-    } 
-    catch(IOException exception) 
-    {
+  public ClientConsole(String loginID, String host, int port) 
+  {  
+    try {
+    	if(port == 1) {
+    		System.out.println("Cannot open connection.  Awaiting command.");
+    		fromConsole = new Scanner(System.in); 
+    		String message = fromConsole.nextLine();
+    		String[] messageArray = message.split(" ");
+    		if(messageArray[0].equals("#setPort")){
+    			port = Integer.parseInt(messageArray[1]);
+    			client= new ChatClient(loginID, host, port, this);	
+    		}
+   	
+    	}else {
+    		client= new ChatClient(loginID, host, port, this);		
+    	}
+    }catch(Exception exception){
       System.out.println("Error: Can't setup connection!"
                 + " Terminating client.");
       System.exit(1);
@@ -76,21 +83,18 @@ public class ClientConsole implements ChatIF
    * This method waits for input from the console.  Once it is 
    * received, it sends it to the client's message handler.
    */
-  public void accept() 
+  public void accept()
   {
     try
     {
-
       String message;
 
       while (true) 
       {
-        message = fromConsole.nextLine();
+    	message = fromConsole.nextLine();
         client.handleMessageFromClientUI(message);
       }
-    } 
-    catch (Exception ex) 
-    {
+    }catch (Exception ex){
       System.out.println
         ("Unexpected error while reading from console!");
     }
@@ -117,19 +121,37 @@ public class ClientConsole implements ChatIF
    */
   public static void main(String[] args) 
   {
+	String loginID = ""; 
     String host = "";
-
+    int port = DEFAULT_PORT;
 
     try
     {
-      host = args[0];
-    }
-    catch(ArrayIndexOutOfBoundsException e)
+    	if(args.length == 3) {
+    		loginID = args[0];
+    		host = args[1];
+    		port = Integer.parseInt(args[2]);
+    	}else if(Integer.getInteger(args[1]) != null){
+    		host = args[0];
+    		port = Integer.parseInt(args[1]);
+    	}else {
+    		loginID = args[0];
+    		host = args[1];
+    		port = 1;
+    	}
+     
+    }catch(ArrayIndexOutOfBoundsException e)
     {
       host = "localhost";
+      port = DEFAULT_PORT;
     }
-    ClientConsole chat= new ClientConsole(host, DEFAULT_PORT);
-    chat.accept();  //Wait for console data
+    if(loginID.equals("")) {
+    	System.out.println("ERROR - No login ID specified.  Connection aborted.\n");
+    }else {
+    	ClientConsole chat= new ClientConsole(loginID, host, port);
+		chat.accept();  //Wait for console data
+    }
+	
   }
 }
 //End of ConsoleChat class
